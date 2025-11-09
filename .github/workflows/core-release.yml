@@ -15,11 +15,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          logout: true
+          registry: ${{ secrets.REGISTRY_URI }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: harbor.ncuos.com/genius-auth/core
+          images: ${{ secrets.REGISTRY_URI }}/genius-auth/core
 
       - name: Build Docker Image and Push
         uses: docker/build-push-action@v6
@@ -34,20 +42,11 @@ jobs:
     needs: build-docker-image
     runs-on: self-hosted
     steps:
-#      - name: Update Dev Deployment
-#        uses: MultiMx/K8sSetImageAction@v0.5
-#        with:
-#          backend: 'https://rancher.ncuhome.club'
-#          token: ${{ secrets.CATTLE_TOKEN_LOCAL }}
-#          namespace: 'genius-auth'
-#          workload: 'core'
-#          image: ${{ needs.build-docker-image.outputs.image_tag }}
-
       - name: Update Prod Deployment
         uses: MultiMx/K8sSetImageAction@v0.5
         if: ${{ !contains(github.ref, 'beta') }}
         with:
-          backend: 'https://rancher.ncuos.com'
+          backend: ${{ secrets.CATTLE_URL }}
           token: ${{ secrets.CATTLE_TOKEN }}
           namespace: 'genius-auth'
           workload: 'core'
